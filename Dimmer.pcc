@@ -446,21 +446,13 @@ int blData = 0;
     stream_close(TcpStream);
 } 
 
-
-while (1==1) {
+// main
+while (TRUE) {
     nEvents = getinputevent();
-    
-    // Sonderfunkion: AI12 löst ein "ALLES AUSSCHALTEN"-Signal an die HUE-Bridge aus
-    if (nEvents & 0x8 << 12 && getinput(12)==1) {
-        if (DEBUG_LEVEL > 0) printf("All Lights OFF");
-        sendCommand( "groups/0/action", "{\"on\":false}");
-    // Alle anderen Eingänge werden an die HUE laut Konfiguration weitergegeben:
-    } else {
-        int i;
-        for (i = 0; i < 12; i++) {
-            if (nEvents & 0x8 << i) {
-                setBrightness(lightOrGroupID[i], getinput(i), LIGHT, 0);
-            }
+    int i;
+    for (i = 0; i < 12; i++) {
+        if (nEvents & 0x8 << i) {
+            setBrightness(lightOrGroupID[i], getinput(i), LIGHT, 0);
         }
     }
     sleep(100);
