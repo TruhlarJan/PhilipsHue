@@ -18,34 +18,6 @@ int DIMMER_MAX=100;
 // Übergangszeit von einem Dimmwert zum nächsten (10 = 1 Sekunde)
 int TRANSITION_TIME=10;
 
-int DIMMER_SIMMIN[12];DIMMER_SIMMIN[0] = 154; //154 = 6400k
-DIMMER_SIMMIN[1] = 154;
-DIMMER_SIMMIN[2] = 154;
-DIMMER_SIMMIN[3] = 154;
-DIMMER_SIMMIN[4] = 154;
-DIMMER_SIMMIN[5] = 154;
-DIMMER_SIMMIN[6] = 154;
-DIMMER_SIMMIN[7] = 154;
-DIMMER_SIMMIN[8] = 154;
-DIMMER_SIMMIN[9] = 154;
-DIMMER_SIMMIN[10] = 154;
-DIMMER_SIMMIN[11] = 154;
-
-int DIMMER_SIMMAX[12];
-DIMMER_SIMMAX[0] = 500; //370 = 2700k
-DIMMER_SIMMAX[1] = 500;
-DIMMER_SIMMAX[2] = 600;
-DIMMER_SIMMAX[3] = 500;
-DIMMER_SIMMAX[4] = 500;
-DIMMER_SIMMAX[5] = 500;
-DIMMER_SIMMAX[6] = 500;
-DIMMER_SIMMAX[7] = 500;
-DIMMER_SIMMAX[8] = 500;
-DIMMER_SIMMAX[9] = 500;
-DIMMER_SIMMAX[10] = 500;
-DIMMER_SIMMAX[11] = 500;
-
-
 // Bitte folgende Website:
 // http://www.developers.meethue.com/documentation/getting-started 
 // beachten um einen gültigen User-Namen zu generieren!
@@ -53,22 +25,6 @@ char* IP_ADDRESS = "192.168.1.211";
 char* PORT = "80";
 char* USERNAME = "j9PQCECQlbPMiYwhYJnanmFlhJzRAx1M5jReVWJV";
 
-int lightOrGroupID[12];   
-
-// Zuweisung der Lampen- oder GruppenIDs. 
-// Definiert welcher Eingang des Bausteins welche Lampe bzw. Gruppe ansteuert:
-lightOrGroupID[0] = 1;  
-lightOrGroupID[1] = 2;
-lightOrGroupID[2] = 3;
-lightOrGroupID[3] = 4;
-lightOrGroupID[4] = 5;
-lightOrGroupID[5] = 6;
-lightOrGroupID[6] = 7;
-lightOrGroupID[7] = 8;
-lightOrGroupID[8] = 9;
-lightOrGroupID[9] = 10;
-lightOrGroupID[10] = 11;
-lightOrGroupID[11] = 12;
 
 
 char streamname[100];
@@ -139,7 +95,7 @@ while (TRUE) {
     int i;
     for (i = 0; i < 12; i++) {
         if (nEvents & 0x8 << i) {
-            setBrightness(lightOrGroupID[i], getinput(i));
+            setBrightness(i + 1, getinput(i));
         }
     }
     sleep(100);
