@@ -54,36 +54,6 @@ char* IP_ADDRESS = "192.168.1.211";
 char* PORT = "80";
 char* USERNAME = "j9PQCECQlbPMiYwhYJnanmFlhJzRAx1M5jReVWJV";
 
-
-
-int inputType[12]; 
-
-// Hier die Funktion des Eingangs definieren:
-// 0 = RGB-Eingang (Eingang LoxoneFormat, 9-stellige Zahl die RGB codiert mit 100100100 für weiß. Ansteuerung der Lampe via Hue/Sat/Bri
-// 1 = Dimmereingang. Eingangswert muss im Bereich DIMMER_MIN / DIMMER_MAX sein. Ansteuerung der Lampe via Bri.
-// 2 = ON/OF - Eingang (z.B. für Steckdosen-Adapter)
-// 4 = RGB-Eingang (wie '0', aber ansteuerung der Lampe via X/Y/Bri)
-// 5 = Dimmereingang (wie '1', Ansteuerung der Lampe via Bri/Ct, Glühlampensimulation)
-
-// Wenn Lampengruppen bestehen, dann diese Typen verwenden:
-// 3 = RGB-Eingang (wie '0', aber steuert Lampengruppe via Hue/Sat/Bri)
-// 6 = RGB-Eingang (wie '0', aber steuert Lampengruppe via X/Y/Bri)
-// 7 = Dimmereingang, wie 1, aber für Gruppe oder Szene
-//     für diese Gruppe eine Szene angegeben, so wird die Szene bei Wert 1 oder 100 gesetzt
-
-inputType[0] = 1;  
-inputType[1] = 1;
-inputType[2] = -1;  
-inputType[3] = -1;
-inputType[4] = -1;
-inputType[5] = -1;
-inputType[6] = -1;
-inputType[7] = -1;
-inputType[8] = -1;
-inputType[9] = -1;
-inputType[10] = -1;
-inputType[11] = -1;
-
 int lightOrGroupID[12];   
 
 // Zuweisung der Lampen- oder GruppenIDs. 
@@ -101,34 +71,13 @@ lightOrGroupID[9] = 10;
 lightOrGroupID[10] = 11;
 lightOrGroupID[11] = 12;
 
-// Zuweisung von Scenen zu Gruppen
-
-char* sceneIDforGroup[12];
-sceneIDforGroup[0] = "";
-sceneIDforGroup[1] = "";
-sceneIDforGroup[2] = "";
-sceneIDforGroup[3] = "";
-sceneIDforGroup[4] = "";
-sceneIDforGroup[5] = "";
-sceneIDforGroup[6] = "";
-sceneIDforGroup[7] = "";
-sceneIDforGroup[8] = "";
-sceneIDforGroup[9] = "";
-sceneIDforGroup[10] = "";
-sceneIDforGroup[11] = "";
-
-// Ende der Konfiguration...
-
 
 char streamname[100];
 sprintf(streamname, "/dev/tcp/%s/%s/", IP_ADDRESS, PORT);
 
 int nEvents;
 
-int LIGHT = 1;
-int GROUP = 2;
-
-void setBrightness(int lightID, float bri, int type, int idx) {
+void setBrightness(int lightID, float bri) {
     char command[200];
     char cmdscene[100];
     char selector[20];
@@ -137,21 +86,12 @@ void setBrightness(int lightID, float bri, int type, int idx) {
         bri = (bri - DIMMER_MIN )/( DIMMER_MAX - DIMMER_MIN )*254+1;
     }
 
-    if (type==LIGHT) {
-        sprintf(selector,"lights/%d/state", lightID);
-    } else if (type==GROUP) {
-        sprintf(selector,"groups/%d/action", lightID);
-    }
+    sprintf(selector,"lights/%d/state", lightID);
 
     if (bri == 0) {
         sprintf(command, "{\"on\": false}");
         if (DEBUG_LEVEL > 0) printf("Light %d OFF", lightID);
     } else {
-        if (strlen(sceneIDforGroup[idx]) != 0) {
-          if (bri == 1 || bri == 255) {
-                sprintf(cmdscene, ", \"scene\": \"%s\"", sceneIDforGroup[idx]);
-            }
-        }
         sprintf(command, "{\"on\": true, \"bri\": %d, \"transitiontime\": %d%s}", (int) (bri), TRANSITION_TIME, cmdscene);
         if (DEBUG_LEVEL > 0) printf("Light %d ON %d%%", lightID, (int) ((bri-1)/2.55)+1);
     }
@@ -207,7 +147,7 @@ while (TRUE) {
     int i;
     for (i = 0; i < 12; i++) {
         if (nEvents & 0x8 << i) {
-            setBrightness(lightOrGroupID[i], getinput(i), LIGHT, 0);
+            setBrightness(lightOrGroupID[i], getinput(i));
         }
     }
     sleep(100);
