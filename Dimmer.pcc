@@ -128,40 +128,6 @@ int nEvents;
 int LIGHT = 1;
 int GROUP = 2;
 
-void updateLamp(int idx, float value) {
-    if (inputType[idx] == -1) {
-        //ignorieren
-    } else if (inputType[idx] == 0 || inputType[idx] == 4) {   // Lampe Bri/Hue/Sat or X/Y/Bri 
-        if (value < 200000000) { // RGB
-            if (inputType[idx] == 0) {
-                setColorBHS(lightOrGroupID[idx], value, LIGHT);
-            } else if (inputType[idx] == 4) {
-                setColorXYB(lightOrGroupID[idx], value, LIGHT);
-            }
-        } else { // LUMITECH
-            setCtBri(lightOrGroupID[idx], value, LIGHT);
-        }
-    } else if (inputType[idx] == 1) {
-        setBrightness(lightOrGroupID[idx], value, LIGHT, 0);
-    } else if (inputType[idx] == 7) {
-        setBrightness(lightOrGroupID[idx], value, GROUP, idx);
-    } else if (inputType[idx] == 2) {
-        setOnOff(lightOrGroupID[idx], value);
-    } else if (inputType[idx] == 3 || inputType[idx] == 6) {  // Gruppe Bri/Hue/Sat or X/Y/Bri 
-        if (value < 200000000) { // RGB
-            if (inputType[idx] == 3) {
-                setColorBHS(lightOrGroupID[idx], value, GROUP);
-            } else if (inputType[idx] == 6) {
-                setColorXYB(lightOrGroupID[idx], value, GROUP);
-            }
-        } else { // LUMITECH
-            setCtBri(lightOrGroupID[idx], value, GROUP);
-        }
-    } else if (inputType[idx] == 5) {
-        setBrightnessAsBulb(lightOrGroupID[idx], value, idx);
-    }
-}
-
 void setBrightness(int lightID, float bri, int type, int idx) {
     char command[200];
     char cmdscene[100];
@@ -493,7 +459,7 @@ while (1==1) {
         int i;
         for (i = 0; i < 12; i++) {
             if (nEvents & 0x8 << i) {
-                updateLamp(i, getinput(i));
+                setBrightness(lightOrGroupID[i], getinput(i), LIGHT, 0);
             }
         }
     }
