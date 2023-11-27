@@ -12,7 +12,6 @@
 #define BUFF_SIZE 40000
 #define RD_BLOCK_SIZE 128
 
-int DEBUG_LEVEL=0;
 int DIMMER_MIN=15;  
 int DIMMER_MAX=100;
 
@@ -90,10 +89,8 @@ void setBrightness(int lightID, float bri) {
 
     if (bri == 0) {
         sprintf(command, "{\"on\": false}");
-        if (DEBUG_LEVEL > 0) printf("Light %d OFF", lightID);
     } else {
         sprintf(command, "{\"on\": true, \"bri\": %d, \"transitiontime\": %d%s}", (int) (bri), TRANSITION_TIME, cmdscene);
-        if (DEBUG_LEVEL > 0) printf("Light %d ON %d%%", lightID, (int) ((bri-1)/2.55)+1);
     }
     
     sendCommand(selector, command);
@@ -101,11 +98,10 @@ void setBrightness(int lightID, float bri) {
 
 void sendCommand(char* selector, char* command) {
 
-if (DEBUG_LEVEL > 1) char szBuffer[BUFF_SIZE];
-char szTmpBuffer[RD_BLOCK_SIZE];
-int nCnt;
-int nBytesReceived = 0;
-int blData = 0;
+    char szTmpBuffer[RD_BLOCK_SIZE];
+    int nCnt;
+    int nBytesReceived = 0;
+    int blData = 0;
 
     STREAM* TcpStream = stream_create(streamname,0,0);
     if (TcpStream == NULL) {
@@ -117,7 +113,6 @@ int blData = 0;
     char buffer[1024];
     sprintf(buffer, "PUT /api/%s/%s HTTP/1.1\r\nHost: %s\r\nConnection: keep-alive\r\nContent-Length: %d\r\n\r\n%s", 
             USERNAME, selector, IP_ADDRESS, strlen(command), command);
-    if (DEBUG_LEVEL > 1) printf(buffer);
     stream_write(TcpStream,buffer,sizeof(buffer));
     stream_flush(TcpStream);
     // read stream
@@ -131,13 +126,10 @@ int blData = 0;
         }
         else if(nCnt > 0)
         {
-            if (DEBUG_LEVEL > 1) strncpy((char*)szBuffer + nBytesReceived, szTmpBuffer, nCnt);
             nBytesReceived += nCnt;
         }
     }
     while (nCnt > 0);
-    if (DEBUG_LEVEL > 1) printf(strstr(szBuffer,"[{"));
-    //sleep(150);
     stream_close(TcpStream);
 } 
 
