@@ -1,31 +1,18 @@
 // Philips HUE Steuerung
-// Eingang des Programmbausteins wird mit dem Ausgang der Lichtsteuerung (RGB, Dimmer, Ein/Aus) verbunden
-//
-// (c) 2013 by Romy Glauser
-// FÜR LIVING COLORS GEN 2 - MIT HUE!
-// 
-// (c) 2015 Erweiterung durch Andreas Lackner-Werner um LUMITECH (rgbw) & Gruppenfunktionen sowei generelles Cleanup des Codes
-//
-// (c) 2015 Erweiterung durch Sven Thierfelder um cx/cy Farbsteuerung für hue-bulbs sowie Glühlampensimulation
-// 
 
 #define BUFF_SIZE 40000
 #define RD_BLOCK_SIZE 128
 
-int DIMMER_MIN=15;  
-int DIMMER_MAX=100;
+int DIMMER_MIN = 15;  
+int DIMMER_MAX = 100;
 
 // Übergangszeit von einem Dimmwert zum nächsten (10 = 1 Sekunde)
-int TRANSITION_TIME=10;
+int TRANSITION_TIME = 10;
 
-// Bitte folgende Website:
 // http://www.developers.meethue.com/documentation/getting-started 
-// beachten um einen gültigen User-Namen zu generieren!
 char* IP_ADDRESS = "192.168.1.211";
 char* PORT = "80";
 char* USERNAME = "j9PQCECQlbPMiYwhYJnanmFlhJzRAx1M5jReVWJV";
-
-
 
 char streamname[100];
 sprintf(streamname, "/dev/tcp/%s/%s/", IP_ADDRESS, PORT);
@@ -38,10 +25,10 @@ void setBrightness(int lightID, float bri) {
     char selector[20];
     // Normieren von 35-100 -> 1-255
     if (bri > 0) {
-        bri = (bri - DIMMER_MIN )/( DIMMER_MAX - DIMMER_MIN )*254+1;
+        bri = (bri - DIMMER_MIN ) / ( DIMMER_MAX - DIMMER_MIN ) * 254 + 1;
     }
 
-    sprintf(selector,"lights/%d/state", lightID);
+    sprintf(selector, "lights/%d/state", lightID);
 
     if (bri == 0) {
         sprintf(command, "{\"on\": false}");
@@ -59,7 +46,7 @@ void sendCommand(char* selector, char* command) {
     int nBytesReceived = 0;
     int blData = 0;
 
-    STREAM* TcpStream = stream_create(streamname,0,0);
+    STREAM* TcpStream = stream_create(streamname, 0, 0);
     if (TcpStream == NULL) {
         printf("Creating Stream failed");
         stream_close(TcpStream);
@@ -69,19 +56,15 @@ void sendCommand(char* selector, char* command) {
     char buffer[1024];
     sprintf(buffer, "PUT /api/%s/%s HTTP/1.1\r\nHost: %s\r\nConnection: keep-alive\r\nContent-Length: %d\r\n\r\n%s", 
             USERNAME, selector, IP_ADDRESS, strlen(command), command);
-    stream_write(TcpStream,buffer,sizeof(buffer));
+    stream_write(TcpStream, buffer, sizeof(buffer));
     stream_flush(TcpStream);
     // read stream
-    do
-    {
-        nCnt = stream_read(TcpStream,szTmpBuffer,RD_BLOCK_SIZE,4000);
-        if (nCnt + nBytesReceived > BUFF_SIZE)
-        {
+    do {
+        nCnt = stream_read(TcpStream, szTmpBuffer, RD_BLOCK_SIZE, 4000);
+        if (nCnt + nBytesReceived > BUFF_SIZE) {
             nBytesReceived = -1;
             break; //File is too large
-        }
-        else if(nCnt > 0)
-        {
+        } else if(nCnt > 0) {
             nBytesReceived += nCnt;
         }
     }
