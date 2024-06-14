@@ -1,52 +1,119 @@
 // Philips HUE Steuerung
+// http://www.developers.meethue.com/documentation/getting-started
+// https://smarthomeblog-online.de/loxone/philips-hue-leuchten-in-loxone-integrieren/
 
 #define BUFF_SIZE 40000
 #define RD_BLOCK_SIZE 128
 
-int DIMMER_MIN = 15;  
+// Transition time from one dimming value to the next (10 = 1 Sekunde)
+int TRANSITION_TIME = 10;
+int DIMMER_MIN = 15;
 int DIMMER_MAX = 100;
 
-// Übergangszeit von einem Dimmwert zum nächsten (10 = 1 Sekunde)
-int TRANSITION_TIME = 10;
-
-// http://www.developers.meethue.com/documentation/getting-started 
 char* IP_ADDRESS = "192.168.1.211";
 char* PORT = "80";
 char* USERNAME = "j9PQCECQlbPMiYwhYJnanmFlhJzRAx1M5jReVWJV";
+
+// 0 - Philips Hue White 
+// 1 - Philips Hue White Ambiance
+int inputTypes[12];
+inputTypes[0] = 0;
+inputTypes[1] = 0;
+inputTypes[2] = 1;
+inputTypes[3] = 1;
+inputTypes[4] = 1;
+inputTypes[5] = 1;
+inputTypes[6] = 1;
+inputTypes[7] = 1;
+inputTypes[8] = 1;
+inputTypes[9] = 1;
+inputTypes[10] = 0;
+inputTypes[11] = 0;
+
+// Assignment of lamp IDs.
+// Defines which input of the block controls which lamp. (http://192.168.1.211/api/j9PQCECQlbPMiYwhYJnanmFlhJzRAx1M5jReVWJV/lights)
+int lightIDs[12];
+lightIDs[0] = 2;
+lightIDs[1] = 1;
+lightIDs[2] = 11;
+lightIDs[3] = 12;
+lightIDs[4] = 13;
+lightIDs[5] = 14;
+lightIDs[6] = 7;
+lightIDs[7] = 8;
+lightIDs[8] = 9;
+lightIDs[9] = 10;
+lightIDs[10] = 15;
+lightIDs[11] = 16;
+// End of configuration...
+
 
 char streamname[100];
 sprintf(streamname, "/dev/tcp/%s/%s/", IP_ADDRESS, PORT);
 
 int nEvents;
 
+// factory method for input type
+void updateLamp(int idx, float value) {
+    if (inputTypes[idx] == 0) {
+        setBrightness(lightIDs[idx], value);
+    } else if (inputTypes[idx] == 1) {
+        setCtBri(lightIDs[idx], value);
+    } else {
+        // to ignore
+    }
+}
+
+// Dimmer input. Input value must be in the range DIMMER_MIN / DIMMER_MAX.
 void setBrightness(int lightID, float bri) {
     char command[200];
     char cmdscene[100];
     char selector[20];
-    // Normieren von 35-100 -> 1-255
+    // Normalization of 35-100 -> 1-255
     if (bri > 0) {
-        bri = (bri - DIMMER_MIN ) / ( DIMMER_MAX - DIMMER_MIN ) * 254 + 1;
+        bri = (bri- DIMMER_MIN )/( DIMMER_MAX - DIMMER_MIN )*254+1;
     }
 
-    sprintf(selector, "lights/%d/state", lightID);
+    sprintf(selector,"lights/%d/state", lightID);
 
     if (bri == 0) {
         sprintf(command, "{\"on\": false}");
     } else {
         sprintf(command, "{\"on\": true, \"bri\": %d, \"transitiontime\": %d%s}", (int) (bri), TRANSITION_TIME, cmdscene);
     }
-    
+    sendCommand(selector, command);
+}
+
+// Input LoxoneFormat, 9-digit number that encodes RGB with 100100100 for white.
+void setCtBri(int lightID, float ctbrivalue) {
+    char command[100];
+    char selector[20];
+    float bri, ct;
+    int briNorm, miredNorm;
+
+    bri = floor((ctbrivalue-200000000) / 10000); // 0-100
+    ct = floor((ctbrivalue-200000000) - (bri * 10000)); // Value in Kelvin, von 2700 - 6500
+
+    briNorm = (int) round(bri*2.55); // 0-255
+    miredNorm = (int) round(1000000/ct); // Value of 154 - 370
+
+    sprintf(selector,"lights/%d/state", lightID);
+
+    if (bri == 0) {
+        sprintf(command, "{\"on\": false}");
+    } else {
+        sprintf(command, "{\"on\": true, \"bri\": %d, \"ct\": %d, \"transitiontime\": %d}", briNorm, miredNorm, TRANSITION_TIME);
+    }
     sendCommand(selector, command);
 }
 
 void sendCommand(char* selector, char* command) {
-
     char szTmpBuffer[RD_BLOCK_SIZE];
     int nCnt;
     int nBytesReceived = 0;
     int blData = 0;
 
-    STREAM* TcpStream = stream_create(streamname, 0, 0);
+    STREAM* TcpStream = stream_create(streamname,0,0);
     if (TcpStream == NULL) {
         printf("Creating Stream failed");
         stream_close(TcpStream);
@@ -54,14 +121,14 @@ void sendCommand(char* selector, char* command) {
     }
 
     char buffer[1024];
-    sprintf(buffer, "PUT /api/%s/%s HTTP/1.1\r\nHost: %s\r\nConnection: keep-alive\r\nContent-Length: %d\r\n\r\n%s", 
-            USERNAME, selector, IP_ADDRESS, strlen(command), command);
-    stream_write(TcpStream, buffer, sizeof(buffer));
+    sprintf(buffer, "PUT /api/%s/%s HTTP/1.1\r\nHost: %s\r\nConnection: keep-alive\r\nContent-Length: %d\r\n\r\n%s",        USERNAME, selector, IP_ADDRESS, strlen(command), command);
+    stream_write(TcpStream,buffer,sizeof(buffer));
     stream_flush(TcpStream);
     // read stream
     do {
         nCnt = stream_read(TcpStream, szTmpBuffer, RD_BLOCK_SIZE, 4000);
-        if (nCnt + nBytesReceived > BUFF_SIZE) {
+        if (nCnt + nBytesReceived > BUFF_SIZE)
+        {
             nBytesReceived = -1;
             break; //File is too large
         } else if(nCnt > 0) {
@@ -69,17 +136,26 @@ void sendCommand(char* selector, char* command) {
         }
     }
     while (nCnt > 0);
+    //sleep(150);
     stream_close(TcpStream);
-} 
+}
 
-// main
 while (TRUE) {
     nEvents = getinputevent();
-    int i;
-    for (i = 0; i < 12; i++) {
-        if (nEvents & 0x8 << i) {
-            setBrightness(i + 1, getinput(i));
+    if (nEvents & 0x8 << 12 && getinput(12) == 1) {
+        // Special function: AI12 triggers a "TURN ALL OFF" signal to the HUE bridge
+        sendCommand( "groups/0/action", "{\"on\":false}");
+    } else {
+        // All other inputs are passed on to the HUE according to the configuration:
+        int i;
+        for (i = 0; i < 12; i++) {
+            if (nEvents & 0x8 << i) {
+                updateLamp(i, getinput(i));
+            }
         }
     }
     sleep(100);
 }
+
+
+
